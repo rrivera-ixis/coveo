@@ -1,0 +1,2 @@
+route_callbacks:
+  - '\Drupal\coveo\Routing\SearchPageRoutes::routes'

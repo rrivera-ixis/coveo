@@ -1,0 +1,14 @@
+coveo.search_page:
+  version: VERSION
+  js:
+    '//static.cloud.coveo.com/searchui/v2.4609/js/CoveoJsSearch.Lazy.min.js': { scope: footer, external: true }
+    '//static.cloud.coveo.com/searchui/v2.4609/js/templates/templates.js': { scope: footer, external: true }
+    js/coveo_search.js: { scope: footer }
+  css:
+    component:
+      '//static.cloud.coveo.com/searchui/v2.4609/css/CoveoFullSearch.css': { scope: footer, external: true }
+      css/styles.css: { scope: footer, external: true }
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupalSettings

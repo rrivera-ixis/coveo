@@ -1,0 +1,235 @@
+<?php
+
+/**
+ * @file
+ * Provides an Coveo Search based service class for the Search API.
+ */
+
+use Drupal\Core\Field\TypedData\FieldItemDataDefinition;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\search_api\Entity\Server;
+use Drupal\search_api\IndexInterface;
+use Drupal\search_api\Item\FieldInterface;
+use Drupal\coveo\Coveo\Client;
+use Drupal\coveo\Coveo\Field;
+
+/**
+ * A prefix for all fields to identify as coming from this module.
+ */
+const coveo_PREFIX = 'drpl_';
+
+/**
+ * The main field to identify entities in the search api.
+ */
+const coveo_ID_FIELD = coveo_PREFIX . 'search_api_id';
+
+/**
+ * Implements hook_theme().
+ */
+function coveo_theme() {
+  $theme = [];
+
+  $theme['coveo-search-page'] = [
+    'template' => 'coveo-search-page',
+    'variables' => [
+      'data' => NULL,
+    ],
+  ];
+
+  return $theme;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function coveo_form_search_api_index_fields_alter(&$form, FormStateInterface $form_state, $form_id) {
+  /** @var \Drupal\search_api\UnsavedIndexConfiguration $index */
+  $index = $form_state->getFormObject()->getEntity();
+  /** @var \Drupal\search_api\Entity\Server $server */
+  $server = $index->getServerInstance();
+
+  // Add Coveo field validation.
+  if ($server instanceof Server && $server->getBackendId() === 'coveo') {
+    $form['actions']['submit']['#validate'][] = '_coveo_field_validate';
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function coveo_form_search_api_index_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  if (empty($form['#validate'])) {
+    $form['#validate'] = [];
+  }
+  array_unshift($form['#validate'], '_coveo_index_validate');
+}
+
+/**
+ * Validates the index fields against coveo source.
+ *
+ * @param array $form
+ *   The form.
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *   Form state.
+ */
+function _coveo_field_validate(array &$form, FormStateInterface $form_state) {
+  /** @var \Drupal\search_api\UnsavedIndexConfiguration $index */
+  $index = $form_state->getFormObject()->getEntity();
+  if (!coveo_sync_index_fields($index)) {
+    $form_state->setError($form, t('There was an error saving these fields on the index.'));
+  }
+}
+
+/**
+ * Validates an index on save and syncs index fields.
+ *
+ * @param array $form
+ *   The form.
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *   The form state.
+ *
+ * @throws \Drupal\search_api\SearchApiException
+ */
+function _coveo_index_validate(array &$form, FormStateInterface $form_state) {
+  /** @var \Drupal\search_api\UnsavedIndexConfiguration $index */
+  $index = $form_state->getFormObject()->getEntity();
+  /** @var \Drupal\search_api\Entity\Server $server */
+  $server = $index->getServerInstance();
+
+  // Add Coveo field validation.
+  if ($server instanceof Server && $server->getBackendId() === 'coveo') {
+    if (!coveo_sync_index_fields($index)) {
+      $form_state->setError($form, t('There was an error saving these fields on the Coveo index.'));
+    }
+  }
+}
+
+/**
+ * Syncs fields from an index to coveo.
+ *
+ * @param \Drupal\search_api\IndexInterface $index
+ *   The current index.
+ *
+ * @return bool
+ *   If fields were synced.
+ *
+ * @throws \Drupal\search_api\SearchApiException
+ */
+function coveo_sync_index_fields(IndexInterface $index) {
+  // @TODO: This is pretty horribly setup, refactor backend vs index config.
+  $backend_config = $index->getServerInstance()->getBackendConfig();
+  $client = new Client($backend_config['application_id'], $backend_config['source_id'], $backend_config['api_key']);
+
+  $field_class = new Field($client);
+
+  // Compare the fields to know whether to create, update or delete.
+  $coveo_fields = $field_class->loadUserFields();
+  $index_fields = $index->getFields();
+
+  $operations = [];
+  foreach ($coveo_fields['items'] as $user_field) {
+    if ($user_field['name'] == coveo_ID_FIELD) {
+      continue;
+    }
+
+    // Strip prefix.
+    $drupal_field = substr($user_field['name'], strlen(coveo_PREFIX));
+    if (isset($index_fields[$drupal_field])) {
+      /** @var \Drupal\search_api\Item\Field $field */
+      $field = $index_fields[$drupal_field];
+
+      $carinality = coveo_field_cardinality($field);
+      $field_type = $carinality ? 'STRING' : $field_class->mapCoveoType($field->getType());
+      $sort = $facet = TRUE;
+
+      // @TODO: This is not always correct, i.e. title / content type.
+      if (!$carinality && $field_type === 'STRING') {
+        $facet = FALSE;
+        $sort = FALSE;
+      }
+
+      $operations['update'][] = [
+        'name' => $user_field['name'],
+        'type' => $user_field['type'],
+        'description' => $field->getLabel(),
+        'sort' => $sort,
+        'facet' => $facet,
+      ];
+
+      // Remove from the list of pending.
+      unset($index_fields[$drupal_field]);
+    }
+    // Delete the fields.
+    else {
+      $operations['delete'][] = $user_field['name'];
+    }
+  }
+
+  // Anything left should get created.
+  foreach ($index_fields as $field_id => $new) {
+    if ($field_id === coveo_ID_FIELD) {
+      continue;
+    }
+
+    $carinality = coveo_field_cardinality($new);
+    $field_type = $carinality ? 'STRING' : $field_class->mapCoveoType($new->getType());
+    $sort = $facet = TRUE;
+    if (!$carinality && $field_type === 'STRING') {
+      $facet = FALSE;
+      $sort = FALSE;
+    }
+
+    $operations['create'][] = [
+      'name' => coveo_PREFIX . $field_id,
+      'description' => $new->getLabel(),
+      'type' => $field_type,
+      'sort' => $sort,
+      'facet' => $facet,
+    ];
+
+  }
+
+  // @TODO: Rewrite! .
+  try {
+    if (!empty($operations['create'])) {
+      $field_class->create($operations['create']);
+    }
+
+    // @TODO: You cannot change fields short of attributes, Need to look into.
+    if (!empty($operations['update'])) {
+      $field_class->update($operations['update']);
+    }
+
+    if (!empty($operations['delete'])) {
+      $field_class->delete($operations['delete']);
+    }
+
+  }
+  catch (Exception $e) {
+    // @TODO: we should log this at minimum.
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+/**
+ * Helper to check if a field has cardinality to force a string on coveo.
+ *
+ * @param \Drupal\search_api\Item\FieldInterface $field
+ *   The field to check.
+ *
+ * @return bool
+ *   TRUE if has cardinality.
+ *
+ * @throws \Drupal\search_api\SearchApiException
+ */
+function coveo_field_cardinality(FieldInterface $field) {
+  $definition = $field->getDataDefinition();
+  if ($definition instanceof FieldItemDataDefinition) {
+    $field_definition = $definition->getFieldDefinition()
+      ->getFieldStorageDefinition();
+    return $field_definition->getCardinality() !== 1;
+  }
+  return FALSE;
+}

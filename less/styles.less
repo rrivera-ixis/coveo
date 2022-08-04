@@ -1,0 +1,51 @@
+@brand-color: #c64026;
+@white: #fff;
+#search {
+  .CoveoFacet, .CoveoFacetRange {
+    border-radius: .5rem;
+    overflow: hidden;
+    border: none;
+    margin-bottom: 2rem;
+    .coveo-facet-more,
+    .coveo-facet-less {
+      padding: 1rem;
+      .coveo-facet-more-icon, .coveo-facet-less-icon {
+        position: relative;
+        top: -10px;
+      }
+    }
+    .coveo-facet-header {
+      .coveo-facet-header-title,
+      .coveo-facet-settings-more-svg {
+        color: @white;
+      }
+      background: @brand-color;
+    }
+    .coveo-facet-values {
+      .coveo-facet-value-count {
+        color: @brand-color;
+      }
+    }
+  }
+  .coveo-sort-section > span {
+    color: @brand-color;
+  }
+  .CoveoSort.coveo-selected, .CoveoSort.coveo-selected:hover {
+    border-bottom: 2px solid @brand-color;
+  }
+
+  .coveo-list-layout.CoveoResult {
+    background: @white;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    border: none;
+    border-radius: .5rem;
+    box-shadow: 3px 3px 10px #ccc;
+
+    span[data-field="@drpl_body"] {
+      > span:not(.coveo-field-caption) {
+        font-style: oblique;
+      }
+    }
+  }
+}

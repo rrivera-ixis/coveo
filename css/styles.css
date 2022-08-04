@@ -1,0 +1,56 @@
+#search .CoveoFacet,
+#search .CoveoFacetRange {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: none;
+  margin-bottom: 2rem;
+}
+#search .CoveoFacet .coveo-facet-more,
+#search .CoveoFacetRange .coveo-facet-more,
+#search .CoveoFacet .coveo-facet-less,
+#search .CoveoFacetRange .coveo-facet-less {
+  padding: 1rem;
+}
+#search .CoveoFacet .coveo-facet-more .coveo-facet-more-icon,
+#search .CoveoFacetRange .coveo-facet-more .coveo-facet-more-icon,
+#search .CoveoFacet .coveo-facet-less .coveo-facet-more-icon,
+#search .CoveoFacetRange .coveo-facet-less .coveo-facet-more-icon,
+#search .CoveoFacet .coveo-facet-more .coveo-facet-less-icon,
+#search .CoveoFacetRange .coveo-facet-more .coveo-facet-less-icon,
+#search .CoveoFacet .coveo-facet-less .coveo-facet-less-icon,
+#search .CoveoFacetRange .coveo-facet-less .coveo-facet-less-icon {
+  position: relative;
+  top: -10px;
+}
+#search .CoveoFacet .coveo-facet-header,
+#search .CoveoFacetRange .coveo-facet-header {
+  background: #c64026;
+}
+#search .CoveoFacet .coveo-facet-header .coveo-facet-header-title,
+#search .CoveoFacetRange .coveo-facet-header .coveo-facet-header-title,
+#search .CoveoFacet .coveo-facet-header .coveo-facet-settings-more-svg,
+#search .CoveoFacetRange .coveo-facet-header .coveo-facet-settings-more-svg {
+  color: #fff;
+}
+#search .CoveoFacet .coveo-facet-values .coveo-facet-value-count,
+#search .CoveoFacetRange .coveo-facet-values .coveo-facet-value-count {
+  color: #c64026;
+}
+#search .coveo-sort-section > span {
+  color: #c64026;
+}
+#search .CoveoSort.coveo-selected,
+#search .CoveoSort.coveo-selected:hover {
+  border-bottom: 2px solid #c64026;
+}
+#search .coveo-list-layout.CoveoResult {
+  background: #fff;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: 3px 3px 10px #ccc;
+}
+#search .coveo-list-layout.CoveoResult span[data-field="@drpl_body"] > span:not(.coveo-field-caption) {
+  font-style: oblique;
+}

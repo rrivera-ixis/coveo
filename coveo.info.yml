@@ -1,0 +1,13 @@
+type: module
+name: 'Coveo'
+description: 'Provides integration with the Coveo search engine'
+core: 8.x
+core_version_requirement: ^8 || ^9
+package: Search
+dependencies:
+ - search_api:search_api
+
+# Information added by Drupal.org packaging script on 2020-11-10
+version: '1.0.0-alpha2'
+project: 'coveo'
+datestamp: 1605031001

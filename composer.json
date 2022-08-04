@@ -1,0 +1,13 @@
+{
+    "name": "drupal/coveo",
+    "description": "Coveo Search Client for Drupal",
+    "type": "drupal-module",
+    "require": {
+        "php": "^5.3 || ^7.0",
+        "ext-mbstring": "*",
+        "ext-curl": "*",
+        "drupal/search_api": "^1.15"
+    },
+    "license": "GPL-2.0-or-later",
+    "minimum-stability": "dev"
+}
